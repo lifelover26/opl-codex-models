@@ -10,6 +10,24 @@
 3. 首次启用前，从托盘退出 Codex。选择 A，适用模型点“GPT”“DeepSeek”或“两者”，点击“启动并启用桥”。
 4. 提示成功后重新打开 Codex。之后切换 0/A/B/AB 直接点“切换模式”，无需终端或重启。
 
+### WSL CLI
+
+这套桥也可给 WSL 中的 `codex` / `codex exec` 使用。发布版实测
+`codex-cli 0.155.1` 通过桥执行命令成功。CLI 和桥必须使用同一个 `CODEX_HOME`，并且
+桥要在同一 WSL 发行版的 `127.0.0.1` 上监听；Windows 侧的 loopback 在 NAT 网络下
+不能替代 WSL 侧地址。
+
+```bash
+export CODEX_HOME=/mnt/c/Users/<你的 Windows 用户名>/.codex
+codex --version
+codex exec --json --skip-git-repo-check -C "$PWD" \
+  '请实际执行 pwd，只执行这一条命令，不要修改文件。'
+```
+
+这验证的是桥的协议兼容性，不承诺修复 CLI 自身的工具装配或上下文压缩故障；如果
+请求中本来就没有 `exec` 声明，桥不会自动添加工具。需要完全不经过桥的 CLI 会话时，
+使用 README 中的 `--profile` 独立配置方案。
+
 已经运行的脚本桥会被识别，保留原备份和恢复地址。改变适用模型需要退出 Codex 后点“重启桥 / 加载更新”。
 桥需要 WSL Python 3.11 或更新版本；Windows 程序自带 Python，不需要手动安装 Windows Python。
 首次使用 WSL 可能有几秒启动时间。未安装 WSL 的原生 Codex 用户选择 native。

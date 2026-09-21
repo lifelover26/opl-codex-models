@@ -155,6 +155,37 @@ Unsupported custom tool: 'exec'
 `functions__` 前缀**），再把上游返回的 `function_call` 还原成 Codex 期望的
 `custom_tool_call`，`call_id` 原样保留。
 
+### CLI 也可以直接使用本地桥
+
+发布版桥同时支持 WSL 中运行的 `codex` / `codex exec`，不要求通过 GUI 发起对话。
+实测组合为 `codex-cli 0.155.1`、Responses provider、同一份 `CODEX_HOME`，CLI
+通过桥执行了真实的 `pwd`，收到 `exit_code=0`。因此遇到 CLI 侧的
+`Unsupported custom tool: 'exec'` 时，可以先用同一条桥验证协议兼容性。
+
+使用时必须满足两个路径条件：
+
+1. CLI 和桥使用同一个 `CODEX_HOME` / `config.toml`，否则 CLI 可能仍然直连旧地址；
+2. CLI 在 WSL 中运行时，桥也必须在**同一个 WSL 发行版**内监听 `127.0.0.1`。Windows
+   侧的 `127.0.0.1` 在 NAT 网络下不是 WSL 后端的同一个 loopback。
+
+最短验证流程如下。先用 GUI 的“启动并启用桥”，或按本节 CLI 命令启用桥；然后在
+WSL 终端执行：
+
+```bash
+export CODEX_HOME=/mnt/c/Users/<你的 Windows 用户名>/.codex
+codex --version
+codex exec --json --skip-git-repo-check -C "$PWD" \
+  '请实际执行 pwd，只执行这一条命令，不要修改文件。'
+```
+
+若使用 `--only-model deepseek-v4.1-flash`，只有该模型的报文会转换，其他模型原样
+透传；但 provider 的 `base_url` 仍指向桥，所以桥停止时 CLI 的其他模型也会暂时失败。
+若要让 CLI 真正完全绕开桥，请使用下方的 `--profile` 独立配置方案。
+
+这项验证证明的是“CLI → 桥 → 中转”的协议链可用，不保证 Codex CLI 自身的长期工具
+装配或上下文压缩问题已经修复。如果 CLI 在发请求前就没有声明 `exec`，桥无法凭空补回
+工具；可用 `bridge start --record <脱敏日志>` 或 GUI 的诊断导出继续定位。
+
 > **默认关闭，不开机自启动。** GUI 首页管理后台桥，健康检查后切换地址，恢复直连后停止服务。关闭窗口不停桥。以下 CLI 命令仅供开发使用，日常操作不需要终端。
 
 ```powershell
